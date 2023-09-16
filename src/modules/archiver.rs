@@ -2,66 +2,78 @@ use std::fs::OpenOptions;
 use tar::{Builder, Archive};
 
 
-pub fn pack(input_folder: String, output_tarball: String) {
+pub fn pack(input_folder: String, output_tarball: String) -> Result<(), String> {
+    // Try to open an instance of the output_tarball
     let output_file_options = OpenOptions::new()
     .write(true)
+    .append(false)
     .read(false)
     .create_new(true)
     .open(output_tarball);
     
+    // Ensure that we created the output_tarball safely
     let output_file;
     match output_file_options {
         Ok(resp) => {
             output_file = resp;
         },
         Err(error) => {
-            println!("ERROR: Couldn't create the output archive file:\n {error}");
-            return;
-        },
+            return Err(format!("Failed to create the output archive file:\n {error}"));
+        }
     };
+
+    // Create an instance of the archive builder
     let mut tar_builder = Builder::new(output_file);
     
+    // Use the archive builder to clone the input_folder into the output_tarball
     match tar_builder.append_dir_all(input_folder.clone(), input_folder) {
         Ok(_) => {},
         Err(error) => {
-            println!("ERROR: Failed to create the tar archive\n {error}");
-            return;
-        },
+            return Err(format!("Failed to create the tar archive:\n {error}"));
+        }
     };
 
+    // Finalize the output_tarball, appending the termination bytes to the end of the output_tarball
     match tar_builder.into_inner() {
-        Ok(_) => {},
+        Ok(_resp) => {},
         Err(error) => {
-            println!("ERROR: Couldn't finalize the tar archive\n {error}");
-            return;
-        },
+            return Err(format!("Failed to finish writing to the tar archive:\n {error}"));
+        }
     }
+
+    // Return the success!
+    return Ok(());
 }
 
-pub fn unpack(input_tarball: String, output_folder: String) {
+pub fn unpack(input_tarball: String, output_folder: String) -> Result<(), String> {
+    // Try to open the input_tarball
     let input_tarball_options = OpenOptions::new()
     .write(false)
     .read(true)
     .open(input_tarball);
     
+    // Make sure that we safely opened the input_tarball
     let input_tarball;
     match input_tarball_options {
         Ok(resp) => {
             input_tarball = resp;
         },
         Err(error) => {
-            println!("ERROR: Couldn't open the input tarball:\n {error}");
-            return;
-        },
+            return Err(format!("Failed to open the input tarball:\n {error}"));
+        }
     };
 
+    // Create an instance of the archiver
     let mut tar_unpacker = Archive::new(input_tarball);
 
+    // Try to unpack the input_tarball into the output_folder
     match tar_unpacker.unpack(output_folder) {
-        Ok(_) => {},
+        Ok(_resp) => {},
         Err(error) => {
-            println!("ERROR: Failed to unpack the tar archive\n {error}");
-            return;
+            return Err(format!("Failed to unpack the input tarball\n {error}"));
         },
     };
+
+    // Return our success!
+    return Ok(());
 }
