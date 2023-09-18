@@ -94,28 +94,53 @@ fn main() {
     };
 }
 
-fn prompt_user_for_password(password_confirmation: bool) -> Result<String, ()> {
+fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()> {
 
     // Initialize variables
     let mut password = String::new();
 
     // Prompt the user for a passsword
     print!("Input a password\n> ");
-    std::io::stdout().flush().unwrap();
+    match std::io::stdout().flush() {
+        Ok(_resp) => {},
+        Err(error) => {
+            println!("ERROR: Failed to flush output stream:\n {error}");
+            return Err(());
+        }
+    };
+
     let mut stdin = std::io::stdin().lock();
-    stdin.read_line(&mut password).unwrap();
+    match stdin.read_line(&mut password) {
+        Ok(_resp) => {},
+        Err(error) => {
+            println!("ERROR: Failed to read input password:\n {error}");
+            return Err(());
+        }
+    };
 
     // Remove special characters from the password
     let password = password.trim();
 
-    if password_confirmation {
+    if should_confirm_password {
         // Initialize annother variable for the confirmation password
         let mut password_again = String::new();
 
         // Prompt the user to confirm their password
         print!("Confirm your password\n> ");
-        std::io::stdout().flush().unwrap();
-        stdin.read_line(&mut password_again).unwrap();
+        match std::io::stdout().flush() {
+            Ok(_resp) => {},
+            Err(error) => {
+                println!("ERROR: Failed to flush output stream:\n {error}");
+                return Err(());
+            }
+        };
+        match stdin.read_line(&mut password_again) {
+            Ok(_resp) => {},
+            Err(error) => {
+                println!("ERROR: Failed to read input password:\n {error}");
+                return Err(());
+            }
+        };
 
         // Remove special characters from the confirmation password
         let password_again = password_again.trim();
