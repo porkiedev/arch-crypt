@@ -17,7 +17,13 @@ fn main() {
             let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
 
             // Pack the directory (and its contents) into a tarball
-            pack(input_directory, output_file);
+            match pack(input_directory, output_file) {
+                Ok(_resp) => {},
+                Err(error) => {
+                    println!("ERROR: Failed to pack tarball:\n {error}");
+                    return;
+                },
+            };
         },
         Some(("unpack", sub_matches)) => {
             // Parse arguments
@@ -26,7 +32,13 @@ fn main() {
             let output_directory = sub_matches.get_one::<String>("OUTPUT_DIRECTORY").unwrap().to_owned();
 
             // Unpack the contents of a tarball into a directory
-            unpack(input_file, output_directory)
+            match unpack(input_file, output_directory) {
+                Ok(_resp) => {},
+                Err(error) => {
+                    println!("ERROR: Failed to unpack tarball:\n {error}");
+                    return;
+                },
+            };
         },
         Some(("encrypt", sub_matches)) => {
             // Parse arguments
