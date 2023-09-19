@@ -10,7 +10,9 @@ use log::error;
 use crate::modules::file_handler::FileReaderWriter;
 
 
-const BLOCK_SIZE: usize = 512;
+// The BLOCK_SIZE is the size of bytes we encrypt at a time
+// Note that when encrypting a block of bytes, a 16byte 'checksum' of sorts will be appended to the end (BLOCK_SIZE + 16)
+const BLOCK_SIZE: usize = 32768;
 
 
 /// Hashes a password using the Argon2id algorithm
@@ -25,10 +27,12 @@ const BLOCK_SIZE: usize = 512;
 /// # Returns
 /// A tuple containing the hashed password and the salt used.
 fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Result<([u8; 32], [u8; 32]), Error> {
+    // Variable declarations
     let encryption_key;
     let mut password_hash = [0u8; 32];
-
     let mut salt = [0u8; 32];
+
+    // If we were provided with a pre-determined salt, use that, otherwise generate a random salt
     match input_salt {
         Some(resp) => {
             salt = resp;
@@ -46,7 +50,7 @@ fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Re
         },
     };
 
-    // Return the hash
+    // Return the hash and the salt we used
     encryption_key = (password_hash, salt);
     
     return Ok(encryption_key);
@@ -188,12 +192,6 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
             return Err(());
         }
     };
-    // match Argon2::default().hash_password_into(plaintext_password.as_bytes(), &salt, &mut encryption_key) {
-    //     Ok(_) => {},
-    //     Err(error) => {
-    //         return;
-    //     },
-    // };
 
     // Initialize the cryptor
     let cryptor;
@@ -298,7 +296,6 @@ impl Cryptor {
     /// # Returns
     /// Returns a Vector of bytes (Vec\<u8>)
     pub fn encrypt_bytes(&self, buffer: &[u8]) -> Result<Vec<u8>, ()> {
-        // let encrypted_bytes = self.cipher.encrypt(&self.nonce.into(), buffer).unwrap();
         let encrypted_bytes;
         match self.cipher.encrypt(&self.nonce.into(), buffer) {
             Ok(resp) => {
@@ -320,7 +317,6 @@ impl Cryptor {
     /// # Returns
     /// Returns a Vector of bytes (Vec\<u8>)
     pub fn decrypt_bytes(&self, buffer: &[u8]) -> Result<Vec<u8>, ()> {
-        // let decrypted_bytes = self.cipher.decrypt(&self.nonce.into(), buffer).unwrap();
         let decrypted_bytes;
         match self.cipher.decrypt(&self.nonce.into(), buffer) {
             Ok(resp) => {
