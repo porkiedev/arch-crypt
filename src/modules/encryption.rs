@@ -6,6 +6,7 @@ use chacha20poly1305::{
     ChaChaPoly1305,
     consts::U12
 };
+use log::error;
 use crate::modules::file_handler::FileReaderWriter;
 
 
@@ -57,13 +58,13 @@ fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Re
 /// * `input_file` - The location of the file you want to encrypt
 /// * `output_file` - The location of the output file
 /// * `plaintext_password` - The password that you want use (It will be hashed using the Argon2id algorithm)
-pub fn encrypt_file(input_file: String, output_file: String, plaintext_password: String) -> Result<(), String> {
+pub fn encrypt_file(input_file: String, output_file: String, plaintext_password: String) -> Result<(), ()> {
     // Try to initialize I/O file writer
     let mut file_rw;
     match FileReaderWriter::new(&input_file, &output_file) {
         Ok(resp) => file_rw = resp,
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
 
@@ -73,25 +74,33 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
         Ok(resp) => {
             (encryption_key, salt) = resp;
         },
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
 
     // Initialize cryptor
-    let cryptor = Cryptor::new(encryption_key, None);
+    let cryptor;
+    match Cryptor::new(encryption_key, None) {
+        Ok(resp) => {
+            cryptor = resp;
+        },
+        Err(_error) => {
+            return Err(());
+        },
+    };
 
     // Write salt and nonce to the start of the output file
     match file_rw.write(&salt) {
         Ok(_resp) => {},
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
     match file_rw.write(&cryptor.nonce) {
         Ok(_resp) => {},
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
 
@@ -106,20 +115,28 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
         let num_bytes_read;
         match file_rw.read(&mut read_file_buffer) {
             Ok(resp) => num_bytes_read = resp,
-            Err(error) => {
-                return Err(format!("{error:?}"));
+            Err(_error) => {
+                return Err(());
             }
         };
         total_num_bytes_read += num_bytes_read;
 
         // Encrypt the bytes and try to write them to the output file
-        let encrypted_bytes = cryptor.encrypt_bytes(&read_file_buffer[..num_bytes_read]);
+        let encrypted_bytes;
+        match cryptor.encrypt_bytes(&read_file_buffer[..num_bytes_read]) {
+            Ok(resp) => {
+                encrypted_bytes = resp;
+            },
+            Err(_error) => {
+                return Err(());
+            },
+        };
         
         // Try to write encrypted bytes to the output file
         match file_rw.write(encrypted_bytes.as_ref()) {
             Ok(_resp) => {},
-            Err(error) => {
-                return Err(format!("{error:?}"));
+            Err(_error) => {
+                return Err(());
             }
         };
     }
@@ -135,13 +152,13 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
 /// 
 /// # Notes
 /// The plaintext_password will be hashed using the Argon2id algorithm and the salt that was stored in the file during the initial encryption process
-pub fn decrypt_file(input_file: String, output_file: String, plaintext_password: String) -> Result<(), String> {
+pub fn decrypt_file(input_file: String, output_file: String, plaintext_password: String) -> Result<(), ()> {
     // Try to initialize input and output file writer
     let mut file_rw;
     match FileReaderWriter::new(&input_file, &output_file) {
         Ok(resp) => file_rw = resp,
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
 
@@ -150,14 +167,14 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     let mut nonce = [0u8; 12];
     match file_rw.read(&mut salt) {
         Ok(_resp) => {},
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
     match file_rw.read(&mut nonce) {
         Ok(_resp) => {},
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
 
@@ -167,8 +184,8 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
         Ok(resp) => {
             (encryption_key, _) = resp;
         },
-        Err(error) => {
-            return Err(format!("{error:?}"));
+        Err(_error) => {
+            return Err(());
         }
     };
     // match Argon2::default().hash_password_into(plaintext_password.as_bytes(), &salt, &mut encryption_key) {
@@ -179,7 +196,15 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     // };
 
     // Initialize the cryptor
-    let cryptor = Cryptor::new(encryption_key, Some(nonce));
+    let cryptor;
+    match Cryptor::new(encryption_key, Some(nonce)) {
+        Ok(resp) => {
+            cryptor = resp;
+        },
+        Err(_error) => {
+            return Err(());
+        },
+    };
 
     // Define a few variables
     let total_file_size_bytes = file_rw.input_file_metadata.len() as usize;
@@ -192,18 +217,26 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
         let num_bytes_read;
         match file_rw.read(&mut read_file_buffer) {
             Ok(resp) => num_bytes_read = resp,
-            Err(error) => {
-                return Err(format!("{error:?}"));
+            Err(_error) => {
+                return Err(());
             }
         };
         total_num_bytes_read += num_bytes_read;
 
         // Encrypt the bytes and try to write them to the output file
-        let decrypted_bytes = cryptor.decrypt_bytes(&read_file_buffer[..num_bytes_read]);
+        let decrypted_bytes;
+        match cryptor.decrypt_bytes(&read_file_buffer[..num_bytes_read]) {
+            Ok(resp) => {
+                decrypted_bytes = resp;
+            },
+            Err(_error) => {
+                return Err(());
+            }
+        };
         match file_rw.write(decrypted_bytes.as_ref()) {
-            Ok(_) => {},
-            Err(error) => {
-                return Err(format!("{error:?}"));
+            Ok(_resp) => {},
+            Err(_error) => {
+                return Err(());
             }
         };
     }
@@ -226,9 +259,20 @@ impl Cryptor {
     /// 
     /// # Notes
     /// Specifying an input_nonce is useful when decrypting a file. You will need to use the same nonce that was used to encrypt the data
-    pub fn new(key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Self {
-        let cipher = ChaCha20Poly1305::new_from_slice(&key).unwrap();
+    pub fn new(key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Result<Self, ()> {
+        // Create ChaCha20Poly1305 cipher using our 256bit key
+        let cipher;
+        match ChaCha20Poly1305::new_from_slice(&key) {
+            Ok(resp) => {
+                cipher = resp;
+            },
+            Err(error) => {
+                error!("Failed to create an instance of the ChaCha20Poly1305 Cryptor:\n {error}");
+                return Err(());
+            },
+        };
 
+        // Use provided nonce or generate a random one
         let mut nonce = [0u8; 12];
         match input_nonce {
             Some(resp) => {
@@ -239,11 +283,11 @@ impl Cryptor {
             },
         };
         
-        let temp_self = Self {
+        // Return Cryptor instance
+        return Ok(Self {
             cipher,
-            nonce,
-        };
-        return temp_self;
+            nonce
+        });
     }
 
     /// Encrypts a given slice of bytes
@@ -253,9 +297,19 @@ impl Cryptor {
     /// 
     /// # Returns
     /// Returns a Vector of bytes (Vec\<u8>)
-    pub fn encrypt_bytes(&self, buffer: &[u8]) -> Vec<u8> {
-        let encrypted_bytes = self.cipher.encrypt(&self.nonce.into(), buffer).unwrap();
-        return encrypted_bytes;
+    pub fn encrypt_bytes(&self, buffer: &[u8]) -> Result<Vec<u8>, ()> {
+        // let encrypted_bytes = self.cipher.encrypt(&self.nonce.into(), buffer).unwrap();
+        let encrypted_bytes;
+        match self.cipher.encrypt(&self.nonce.into(), buffer) {
+            Ok(resp) => {
+                encrypted_bytes = resp;
+            },
+            Err(error) => {
+                error!("Failed to encrypt bytes:\n {error}");
+                return Err(());
+            }
+        };
+        return Ok(encrypted_bytes);
     }
 
     /// Decrypts a given slice of bytes
@@ -265,9 +319,19 @@ impl Cryptor {
     /// 
     /// # Returns
     /// Returns a Vector of bytes (Vec\<u8>)
-    pub fn decrypt_bytes(&self, buffer: &[u8]) -> Vec<u8> {
-        let decrypted_bytes = self.cipher.decrypt(&self.nonce.into(), buffer).unwrap();
-        return decrypted_bytes;
+    pub fn decrypt_bytes(&self, buffer: &[u8]) -> Result<Vec<u8>, ()> {
+        // let decrypted_bytes = self.cipher.decrypt(&self.nonce.into(), buffer).unwrap();
+        let decrypted_bytes;
+        match self.cipher.decrypt(&self.nonce.into(), buffer) {
+            Ok(resp) => {
+                decrypted_bytes = resp;
+            },
+            Err(error) => {
+                error!("Failed to decrypt bytes:\n {error}");
+                return Err(());
+            }
+        };
+        return Ok(decrypted_bytes);
     }
 }
 

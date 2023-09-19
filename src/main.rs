@@ -70,12 +70,7 @@ fn main() {
         };
 
         // Encrypt the file
-        match encrypt_file(input_file, output_file, plaintext_password) {
-            Ok(_) => {},
-            Err(error) => {
-                println!("ERROR: Failed to encrypt the file:\n {error}");
-            }
-        };
+        let _ =  encrypt_file(input_file, output_file, plaintext_password);
     }
 
     if let Some(("decrypt", sub_matches)) = cli_arguments.subcommand() {
@@ -98,12 +93,7 @@ fn main() {
         };
 
         // Decrypt file
-        match decrypt_file(input_file.clone(), output_file, plaintext_password) {
-            Ok(_) => {},
-            Err(error) => {
-                error!("Failed to decrypt the file '{input_file}':\n {error}");
-            }
-        };
+        let _ = decrypt_file(input_file.clone(), output_file, plaintext_password);
     }
 
 }
