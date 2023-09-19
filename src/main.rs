@@ -1,97 +1,111 @@
 // #![allow(unused)]
 // #![allow(deprecated)]
 use std::io::{BufRead, Write};
-
+use log::{info, error};
 mod modules;
 use modules::{encryption::{decrypt_file, encrypt_file}, archiver::{unpack, pack}, cli_args};
 
 
 fn main() {
+    // Initialize logger
+    env_logger::builder().format_timestamp(None).filter_level(log::LevelFilter::Trace).init();
+    info!("Starting");
+
+    // Handle CLI arguments
     let cli_arguments = cli_args::arguments().get_matches();
-    
-    match cli_arguments.subcommand() {
-        Some(("pack", sub_matches)) => {
-            // Parse arguments
-            // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
-            let input_directory = sub_matches.get_one::<String>("INPUT_DIRECTORY").unwrap().to_owned();
-            let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
 
-            // Pack the directory (and its contents) into a tarball
-            match pack(input_directory, output_file) {
-                Ok(_resp) => {},
-                Err(error) => {
-                    println!("ERROR: Failed to pack tarball:\n {error}");
-                    return;
-                },
-            };
-        },
-        Some(("unpack", sub_matches)) => {
-            // Parse arguments
-            // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
-            let input_file = sub_matches.get_one::<String>("INPUT_FILE").unwrap().to_owned();
-            let output_directory = sub_matches.get_one::<String>("OUTPUT_DIRECTORY").unwrap().to_owned();
+    if let Some(("pack", sub_matches)) = cli_arguments.subcommand() {
+        info!("User requested 'pack'");
 
-            // Unpack the contents of a tarball into a directory
-            match unpack(input_file, output_directory) {
-                Ok(_resp) => {},
-                Err(error) => {
-                    println!("ERROR: Failed to unpack tarball:\n {error}");
-                    return;
-                },
-            };
-        },
-        Some(("encrypt", sub_matches)) => {
-            // Parse arguments
-            // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
-            let input_file = sub_matches.get_one::<String>("INPUT_FILE").unwrap().to_owned();
-            let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
+        // Parse arguments
+        // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
+        let input_directory = sub_matches.get_one::<String>("INPUT_DIRECTORY").unwrap().to_owned();
+        let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
 
-            // Prompt user for a password and hash it into encryption key
-            let plaintext_password;
-            match prompt_user_for_password(true) {
-                Ok(resp) => {
-                    plaintext_password = resp;
-                },
-                Err(_) => {
-                    return;
-                }
-            };
+        // Pack the directory (and its contents) into a tarball
+        match pack(input_directory, output_file) {
+            Ok(_resp) => {},
+            Err(_error) => {
+                error!("Failed to pack tarball");
+                return;
+            },
+        };
+    }
 
-            // Encrypt the file
-            match encrypt_file(input_file, output_file, plaintext_password) {
-                Ok(_) => {},
-                Err(error) => {
-                    println!("ERROR: Failed to encrypt the file:\n {error}");
-                }
-            };
-        },
-        Some(("decrypt", sub_matches)) => {
-            // Parse arguments
-            // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
-            let input_file = sub_matches.get_one::<String>("INPUT_FILE").unwrap().to_owned();
-            let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
+    if let Some(("unpack", sub_matches)) = cli_arguments.subcommand() {
+        info!("User requested 'unpack'");
 
-            // Prompt user for a password and hash it into encryption key
-            let plaintext_password;
-            match prompt_user_for_password(false) {
-                Ok(resp) => {
-                    plaintext_password = resp;
-                },
-                Err(_) => {
-                    return;
-                }
-            };
+        // Parse arguments
+        // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
+        let input_file = sub_matches.get_one::<String>("INPUT_FILE").unwrap().to_owned();
+        let output_directory = sub_matches.get_one::<String>("OUTPUT_DIRECTORY").unwrap().to_owned();
 
-            // Decrypt file
-            match decrypt_file(input_file, output_file, plaintext_password) {
-                Ok(_) => {},
-                Err(error) => {
-                    println!("ERROR: Failed to decrypt the file:\n {error}");
-                }
-            };
-        },
-        _ => {}
-    };
+        // Unpack the contents of a tarball into a directory
+        match unpack(input_file, output_directory) {
+            Ok(_resp) => {},
+            Err(_error) => {
+                error!("Failed to unpack tarball");
+                return;
+            },
+        };
+    }
+
+    if let Some(("encrypt", sub_matches)) = cli_arguments.subcommand() {
+        info!("User requested 'encrypt'");
+
+        // Parse arguments
+        // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
+        let input_file = sub_matches.get_one::<String>("INPUT_FILE").unwrap().to_owned();
+        let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
+
+        // Prompt user for a password and hash it into encryption key
+        let plaintext_password;
+        match prompt_user_for_password(true) {
+            Ok(resp) => {
+                plaintext_password = resp;
+            },
+            Err(_) => {
+                return;
+            }
+        };
+
+        // Encrypt the file
+        match encrypt_file(input_file, output_file, plaintext_password) {
+            Ok(_) => {},
+            Err(error) => {
+                println!("ERROR: Failed to encrypt the file:\n {error}");
+            }
+        };
+    }
+
+    if let Some(("decrypt", sub_matches)) = cli_arguments.subcommand() {
+        info!("User requested 'decrypt'");
+
+        // Parse arguments
+        // Note: We can call .unwrap() on these arguments because they are required, and Clap ensures that they were provided
+        let input_file = sub_matches.get_one::<String>("INPUT_FILE").unwrap().to_owned();
+        let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
+
+        // Prompt user for a password and hash it into encryption key
+        let plaintext_password;
+        match prompt_user_for_password(false) {
+            Ok(resp) => {
+                plaintext_password = resp;
+            },
+            Err(_) => {
+                return;
+            }
+        };
+
+        // Decrypt file
+        match decrypt_file(input_file.clone(), output_file, plaintext_password) {
+            Ok(_) => {},
+            Err(error) => {
+                error!("Failed to decrypt the file '{input_file}':\n {error}");
+            }
+        };
+    }
+
 }
 
 fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()> {
@@ -104,7 +118,7 @@ fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()>
     match std::io::stdout().flush() {
         Ok(_resp) => {},
         Err(error) => {
-            println!("ERROR: Failed to flush output stream:\n {error}");
+            error!("Failed to flush the output (stdout) stream:\n {error}");
             return Err(());
         }
     };
@@ -113,7 +127,7 @@ fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()>
     match stdin.read_line(&mut password) {
         Ok(_resp) => {},
         Err(error) => {
-            println!("ERROR: Failed to read input password:\n {error}");
+            error!("Failed to read input password:\n {error}");
             return Err(());
         }
     };
@@ -130,14 +144,14 @@ fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()>
         match std::io::stdout().flush() {
             Ok(_resp) => {},
             Err(error) => {
-                println!("ERROR: Failed to flush output stream:\n {error}");
+                error!("Failed to flush the output (stdout) stream:\n {error}");
                 return Err(());
             }
         };
         match stdin.read_line(&mut password_again) {
             Ok(_resp) => {},
             Err(error) => {
-                println!("ERROR: Failed to read input password:\n {error}");
+                error!("Failed to read input password:\n {error}");
                 return Err(());
             }
         };

@@ -1,6 +1,8 @@
 use std::fs::{File, OpenOptions, Metadata};
 use std::io::{Read, Write};
 
+use log::error;
+
 
 pub struct FileReaderWriter {
     input_file: File,
@@ -24,7 +26,7 @@ impl FileReaderWriter {
         let input_file = match input_file {
             Ok(input_file) => input_file,
             Err(error) => {
-                println!("ERROR: Couldn't open the input file:\n {error}");
+                error!("Couldn't open the input file '{input_file_name}':\n {error}");
                 return Err(());
             }
         };
@@ -32,7 +34,7 @@ impl FileReaderWriter {
         let output_file = match output_file {
             Ok(output_file) => output_file,
             Err(error) => {
-                println!("ERROR: Couldn't open the output file:\n {error}");
+                error!("Couldn't open the output file:\n {error}");
                 return Err(());
             }
         };
@@ -40,7 +42,7 @@ impl FileReaderWriter {
         let input_file_metadata = match input_file.metadata() {
             Ok(input_file_metadata) => input_file_metadata,
             Err(error) => {
-                println!("ERROR: Couldn't get metadata from the input file:\n {error}");
+                error!("Couldn't get metadata from input file:\n {error}");
                 return Err(());
             }
         }; 
@@ -61,7 +63,7 @@ impl FileReaderWriter {
                 return Ok(num_bytes_read);
             },
             Err(error) => {
-                println!("ERROR: Failed to read bytes from input file:\n {error}");
+                error!("Failed to read bytes from input file:\n {error}");
                 return Err(());
             }
         };
@@ -73,7 +75,7 @@ impl FileReaderWriter {
                 return Ok(num_bytes_written);
             },
             Err(error) => {
-                println!("ERROR: Failed to write bytes to output file:\n {error}");
+                error!("Failed to write bytes to output file:\n {error}");
                 return Err(());
             }
         }

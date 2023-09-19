@@ -1,8 +1,9 @@
 use std::fs::{OpenOptions, remove_file, remove_dir_all};
+use log::error;
 use tar::{Builder, Archive};
 
 
-pub fn pack(input_folder: String, output_tarball: String) -> Result<(), String> {
+pub fn pack(input_folder: String, output_tarball: String) -> Result<(), ()> {
     // Try to open an instance of the output_tarball
     let output_file_options = OpenOptions::new()
     .write(true)
@@ -18,7 +19,8 @@ pub fn pack(input_folder: String, output_tarball: String) -> Result<(), String> 
             output_file = resp;
         },
         Err(error) => {
-            return Err(format!("Failed to create the output archive file:\n {error}"));
+            error!("Failed to create the output archive file:\n {error}");
+            return Err(());
         }
     };
 
@@ -30,7 +32,8 @@ pub fn pack(input_folder: String, output_tarball: String) -> Result<(), String> 
         Ok(_) => {},
         Err(error) => {
             delete_file(output_tarball).unwrap();
-            return Err(format!("Failed to create the tar archive:\n {error}"));
+            error!("Failed to create the tar archive:\n {error}");
+            return Err(());
         }
     };
 
@@ -39,7 +42,8 @@ pub fn pack(input_folder: String, output_tarball: String) -> Result<(), String> 
         Ok(_resp) => {},
         Err(error) => {
             delete_file(output_tarball).unwrap();
-            return Err(format!("Failed to finish writing to the tar archive:\n {error}"));
+            error!("Failed to finish writing to the tar archive:\n {error}");
+            return Err(());
         }
     }
 
@@ -47,7 +51,7 @@ pub fn pack(input_folder: String, output_tarball: String) -> Result<(), String> 
     return Ok(());
 }
 
-pub fn unpack(input_tarball: String, output_folder: String) -> Result<(), String> {
+pub fn unpack(input_tarball: String, output_folder: String) -> Result<(), ()> {
     // Try to open the input_tarball
     let input_tarball_options = OpenOptions::new()
     .write(false)
@@ -61,7 +65,8 @@ pub fn unpack(input_tarball: String, output_folder: String) -> Result<(), String
             input_tarball = resp;
         },
         Err(error) => {
-            return Err(format!("Failed to open the input tarball:\n {error}"));
+            error!("Failed to open the input tarball:\n {error}");
+            return Err(());
         }
     };
 
@@ -73,7 +78,8 @@ pub fn unpack(input_tarball: String, output_folder: String) -> Result<(), String
         Ok(_resp) => {},
         Err(error) => {
             delete_directory_recursively(output_folder).unwrap();
-            return Err(format!("Failed to unpack the input tarball\n {error}"));
+            error!("Failed to unpack the input tarball:\n {error}");
+            return Err(());
         },
     };
 
@@ -81,24 +87,26 @@ pub fn unpack(input_tarball: String, output_folder: String) -> Result<(), String
     return Ok(());
 }
 
-pub fn delete_file(input_file: String) -> Result<(), String> {
+pub fn delete_file(input_file: String) -> Result<(), ()> {
     match remove_file(input_file.clone()) {
         Ok(_resp) => {
             return Ok(());
         },
         Err(error) => {
-            return Err(format!("Failed to delete file at '{input_file}':\n {error}"));
+            error!("Failed to delete file at '{input_file}':\n {error}");
+            return Err(());
         },
     };
 }
 
-pub fn delete_directory_recursively(input_directory: String) -> Result<(), String> {
+pub fn delete_directory_recursively(input_directory: String) -> Result<(), ()> {
     match remove_dir_all(input_directory.clone()) {
         Ok(_resp) => {
             return Ok(());
         },
         Err(error) => {
-            return Err(format!("Failed to delete directory at '{input_directory}':\n {error}"));
+            error!("Failed to delete directory at '{input_directory}':\n {error}");
+            return Err(());
         },
     };
 }
