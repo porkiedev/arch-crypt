@@ -59,10 +59,9 @@ fn main() {
         let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
 
         // Prompt user for a password and hash it into encryption key
-        let plaintext_password;
-        match prompt_user_for_password(true) {
+        let plaintext_password = match prompt_user_for_password(true) {
             Ok(resp) => {
-                plaintext_password = resp;
+                resp
             },
             Err(_) => {
                 return;
@@ -82,10 +81,9 @@ fn main() {
         let output_file = sub_matches.get_one::<String>("OUTPUT_FILE").unwrap().to_owned();
 
         // Prompt user for a password and hash it into encryption key
-        let plaintext_password;
-        match prompt_user_for_password(false) {
+        let plaintext_password = match prompt_user_for_password(false) {
             Ok(resp) => {
-                plaintext_password = resp;
+                resp
             },
             Err(_) => {
                 return;
@@ -157,5 +155,5 @@ fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()>
     }
 
     // Return the password
-    return Ok(password.to_string());
+    Ok(password.to_string())
 }

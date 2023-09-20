@@ -28,7 +28,6 @@ const BLOCK_SIZE: usize = 32768;
 /// A tuple containing the hashed password and the salt used.
 fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Result<([u8; 32], [u8; 32]), Error> {
     // Variable declarations
-    let encryption_key;
     let mut password_hash = [0u8; 32];
     let mut salt = [0u8; 32];
 
@@ -51,9 +50,9 @@ fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Re
     };
 
     // Return the hash and the salt we used
-    encryption_key = (password_hash, salt);
+    let encryption_key = (password_hash, salt);
     
-    return Ok(encryption_key);
+    Ok(encryption_key)
 }
 
 /// Encrypts a a file using a plaintext password
@@ -84,10 +83,9 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Initialize cryptor
-    let cryptor;
-    match Cryptor::new(encryption_key, None) {
+    let cryptor = match Cryptor::new(encryption_key, None) {
         Ok(resp) => {
-            cryptor = resp;
+            resp
         },
         Err(_error) => {
             return Err(());
@@ -116,9 +114,8 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
     // Iterate through the input file in (BLOCK_SIZE) chunks and encrypt the bytes
     while total_num_bytes_read < total_file_size_bytes {
         // Try to read bytes from the input file
-        let num_bytes_read;
-        match file_rw.read(&mut read_file_buffer) {
-            Ok(resp) => num_bytes_read = resp,
+        let num_bytes_read = match file_rw.read(&mut read_file_buffer) {
+            Ok(resp) => resp,
             Err(_error) => {
                 return Err(());
             }
@@ -126,10 +123,9 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
         total_num_bytes_read += num_bytes_read;
 
         // Encrypt the bytes and try to write them to the output file
-        let encrypted_bytes;
-        match cryptor.encrypt_bytes(&read_file_buffer[..num_bytes_read]) {
+        let encrypted_bytes = match cryptor.encrypt_bytes(&read_file_buffer[..num_bytes_read]) {
             Ok(resp) => {
-                encrypted_bytes = resp;
+                resp
             },
             Err(_error) => {
                 return Err(());
@@ -144,7 +140,7 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
             }
         };
     }
-    return Ok(());
+    Ok(())
 }
 
 /// Decrypts a a file using a plaintext password
@@ -194,10 +190,9 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Initialize the cryptor
-    let cryptor;
-    match Cryptor::new(encryption_key, Some(nonce)) {
+    let cryptor = match Cryptor::new(encryption_key, Some(nonce)) {
         Ok(resp) => {
-            cryptor = resp;
+            resp
         },
         Err(_error) => {
             return Err(());
@@ -212,9 +207,8 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     // Iterate through the input file in (BLOCK_SIZE) chunks and encrypt the bytes
     while total_num_bytes_read < total_file_size_bytes {
         // Try to read bytes from the input file
-        let num_bytes_read;
-        match file_rw.read(&mut read_file_buffer) {
-            Ok(resp) => num_bytes_read = resp,
+        let num_bytes_read = match file_rw.read(&mut read_file_buffer) {
+            Ok(resp) => resp,
             Err(_error) => {
                 return Err(());
             }
@@ -222,10 +216,9 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
         total_num_bytes_read += num_bytes_read;
 
         // Encrypt the bytes and try to write them to the output file
-        let decrypted_bytes;
-        match cryptor.decrypt_bytes(&read_file_buffer[..num_bytes_read]) {
+        let decrypted_bytes = match cryptor.decrypt_bytes(&read_file_buffer[..num_bytes_read]) {
             Ok(resp) => {
-                decrypted_bytes = resp;
+                resp
             },
             Err(_error) => {
                 return Err(());
@@ -239,7 +232,7 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
         };
     }
 
-    return Ok(());
+    Ok(())
 }
 
 /// Used to encrypt/decrypt byte arrays with a given key and optionally nonces
@@ -259,10 +252,9 @@ impl Cryptor {
     /// Specifying an input_nonce is useful when decrypting a file. You will need to use the same nonce that was used to encrypt the data
     pub fn new(key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Result<Self, ()> {
         // Create ChaCha20Poly1305 cipher using our 256bit key
-        let cipher;
-        match ChaCha20Poly1305::new_from_slice(&key) {
+        let cipher = match ChaCha20Poly1305::new_from_slice(&key) {
             Ok(resp) => {
-                cipher = resp;
+                resp
             },
             Err(error) => {
                 error!("Failed to create an instance of the ChaCha20Poly1305 Cryptor:\n {error}");
@@ -282,10 +274,10 @@ impl Cryptor {
         };
         
         // Return Cryptor instance
-        return Ok(Self {
+        Ok(Self {
             cipher,
             nonce
-        });
+        })
     }
 
     /// Encrypts a given slice of bytes
@@ -296,17 +288,16 @@ impl Cryptor {
     /// # Returns
     /// Returns a Vector of bytes (Vec\<u8>)
     pub fn encrypt_bytes(&self, buffer: &[u8]) -> Result<Vec<u8>, ()> {
-        let encrypted_bytes;
-        match self.cipher.encrypt(&self.nonce.into(), buffer) {
+        let encrypted_bytes = match self.cipher.encrypt(&self.nonce.into(), buffer) {
             Ok(resp) => {
-                encrypted_bytes = resp;
+                resp
             },
             Err(error) => {
                 error!("Failed to encrypt bytes:\n {error}");
                 return Err(());
             }
         };
-        return Ok(encrypted_bytes);
+        Ok(encrypted_bytes)
     }
 
     /// Decrypts a given slice of bytes
@@ -317,17 +308,16 @@ impl Cryptor {
     /// # Returns
     /// Returns a Vector of bytes (Vec\<u8>)
     pub fn decrypt_bytes(&self, buffer: &[u8]) -> Result<Vec<u8>, ()> {
-        let decrypted_bytes;
-        match self.cipher.decrypt(&self.nonce.into(), buffer) {
+        let decrypted_bytes = match self.cipher.decrypt(&self.nonce.into(), buffer) {
             Ok(resp) => {
-                decrypted_bytes = resp;
+                resp
             },
             Err(error) => {
                 error!("Failed to decrypt bytes:\n {error}");
                 return Err(());
             }
         };
-        return Ok(decrypted_bytes);
+        Ok(decrypted_bytes)
     }
 }
 

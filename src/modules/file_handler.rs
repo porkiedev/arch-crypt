@@ -49,34 +49,34 @@ impl FileReaderWriter {
 
         // let mut bufrdr = BufReader::new(file);
 
-        return Ok(Self {
+        Ok(Self {
             input_file,
             input_file_metadata,
             output_file
-        });
+        })
 
     }
 
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize, ()> {
         match self.input_file.read(buffer) {
             Ok(num_bytes_read) => {
-                return Ok(num_bytes_read);
+                Ok(num_bytes_read)
             },
             Err(error) => {
                 error!("Failed to read bytes from input file:\n {error}");
-                return Err(());
+                Err(())
             }
-        };
+        }
     }
 
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize, ()> {
         match self.output_file.write(buffer) {
             Ok(num_bytes_written) => {
-                return Ok(num_bytes_written);
+                Ok(num_bytes_written)
             },
             Err(error) => {
                 error!("Failed to write bytes to output file:\n {error}");
-                return Err(());
+                Err(())
             }
         }
         // output_file.write(&file_buffer[..num_read]);
