@@ -197,10 +197,9 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Hash plaintext_password into a 256bit key
-    let encryption_key;
-    match hash_password(plaintext_password, Some(salt)) {
+    let encryption_key = match hash_password(plaintext_password, Some(salt)) {
         Ok(resp) => {
-            (encryption_key, _) = resp;
+            resp.0 // resp.0 is the key, while resp.1 is the salt that was used
         },
         Err(_error) => {
             return Err(());
@@ -331,7 +330,7 @@ impl Cryptor {
                 resp
             },
             Err(error) => {
-                error!("Failed to decrypt bytes:\n {error}");
+                error!("Failed to decrypt bytes (was the password/key incorrect?):\n {error}");
                 return Err(());
             }
         };
