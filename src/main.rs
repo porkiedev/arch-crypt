@@ -81,7 +81,7 @@ fn main() {
             Ok(resp) => {
                 resp
             },
-            Err(_) => {
+            Err(_error) => {
                 return;
             }
         };
@@ -103,7 +103,7 @@ fn main() {
             Ok(resp) => {
                 resp
             },
-            Err(_) => {
+            Err(_error) => {
                 return;
             }
         };
