@@ -3,6 +3,10 @@ name = "arch-crypt"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "arch-crypt"
+path = "src/main.rs"
+
 [dependencies]
 tar = "0.4.40"
 argon2 = "0.5.2"
