@@ -7,6 +7,10 @@ edition = "2021"
 name = "arch-crypt"
 path = "src/main.rs"
 
+[features]
+default = ["arch-crypt"]
+arch-crypt = []
+
 [dependencies]
 tar = "0.4.40"
 argon2 = "0.5.2"
