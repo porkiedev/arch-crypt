@@ -28,7 +28,7 @@ You can run `arch-crypt` as well as `arch-crypt <subcommand>` to get a help mess
 <h4>Note: In both cases, the file extension doesn't matter. However, it does help to add something to the end so you know if a file is encrypted or a tarball.</h4>
 
 ## Probably useless notes for the curious people
-- During encryption, the input file is read in 32,768-byte sized blocks. To ensure data integrity and validity (_I.E. ensuring the data wasn't modified_), the Poly1305 hashing function will calculate a 16-byte 'checksum' and append it to the end of every block of data. This means that the encrypted output file will always be slightly larger than the input file.
+- During encryption, the input file is read in 32,768-byte-sized blocks. To ensure data integrity and validity (_I.E. ensuring the data wasn't modified or damaged_), the Poly1305 hashing function will calculate a 16-byte 'checksum' and append it to the end of every block of data. This means that the encrypted output file will always be slightly larger than the input file.
 - During encryption, the salt that was used by the password-hashing algorithm (_Argon2id_), as well as the nonce used by the encryption algorithm (_ChaCha20_), will be added to the start of the encrypted file. This is needed during decryption so we can reproduce the same hash (_encryption key_) with the same password, as well as decrypt the data later.
 
 ## Feature considerations (no promises)
