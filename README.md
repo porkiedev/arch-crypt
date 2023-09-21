@@ -30,6 +30,7 @@ You can run `arch-crypt` as well as `arch-crypt <subcommand>` to get a help mess
 ## Probably useless notes for the curious people
 - During encryption, the input file is read in 32,768-byte-sized blocks. To ensure data integrity and validity (_I.E. ensuring the data wasn't modified or damaged_), the Poly1305 hashing function will calculate a 16-byte 'checksum' and append it to the end of every block of data. This means that the encrypted output file will always be slightly larger than the input file.
 - During encryption, the salt that was used by the password-hashing algorithm (_Argon2id_), as well as the nonce used by the encryption algorithm (_ChaCha20_), will be added to the start of the encrypted file. This is needed during decryption so we can reproduce the same hash (_encryption key_) with the same password, as well as decrypt the data later.
+- (I calculated this for fun and my knowledge in cryptology is still very limited, so I could be wrong here!) Due to the ChaCha20 algorithm using a 32-bit counter in the nonce value (The nonce is a 96-bit value with a 32-bit counter value), we can only encrypt a maximum of 4,294,967,295 blocks of data (Remember, each block of data is 32,768 bytes). That means that we can't encrypt more than 140.7 Terabytes of data.
 
 ## Feature considerations (no promises)
 1. Compression (The compression algorithm is undecided. I am open to ideas!)
