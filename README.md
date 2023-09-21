@@ -1,22 +1,35 @@
 ## Short for Archive and Encrypt, Arch-Crypt is a command-line utility for archiving entire directories and encrypting files with passwords.
 
-If you're like me and have little to no trust in cloud storage providers, but you also want a safe way to back up your data, this may suit your needs.
+If you're like me and have little to no trust in cloud storage providers, but you also want a safe way to back up your more critical data, this may suit your needs.
 
-This is a command-line tool. It has only been tested on Windows but there's no reason why it shouldn't work on other architectures.
+Arch-crypt is a command-line tool. It has only been tested on Windows but there's no reason why it shouldn't work on other operating systems.
 
-Arch-Crypt has 2 main functions. Archiving directories, Encrypting files, and vice-versa.
-- The archiving system makes use of tar. Archived directories are converted to tarballs (.tar)
-- The encryption system makes use of the ChaCha20Poly1305 encryption algorithm, and the password-derived Argon2id hashing algorithm for the encryption keys.
+Arch-Crypt is capable of archiving directories, encrypting files, and vice-versa.
+1. The archiving system makes use of tar. Archived directories are converted to tarballs (.tar)
+2. The encryption system makes use of the ChaCha20Poly1305 encryption algorithm along with the password-derivation Argon2id hashing algorithm for the encryption keys.
+
+Arch-Crypt was designed to archive and encrypt small (<100MB) files/directories. That said, I have tested both the archive and encryption functionality with 4.4GB~ files and had no problems.
 
 
 
 ## Usage
-`arch-crypt <command>` the supported commands are `pack`, `unpack`, `encrypt`, `decrypt`
+`arch-crypt <subcommand>` The current subcommands are `pack`, `unpack`, `encrypt`, and `decrypt`.
 
-To encrypt a file, you can run `arch-crypt encrypt <input-file> <output-file>`
-- Ex: `arch-crypt encrypt picture.png picture.png.enc`
+You can run `arch-crypt` as well as `arch-crypt <subcommand>` to get a help message for each corresponding module.
 
-To archive a directory, you can run `arch-crypt pack <input-directory> <output-file>`
-- Ex: `arch-crypt pack my-directory my-directory-archive.tar`
+>To encrypt a file, use `arch-crypt encrypt <input-file> <output-file>`
+>  
+> Example: `arch-crypt encrypt picture.png picture.png.enc`
 
-<h4>Note: In both cases, the file extension doesn't matter, though it does help to add something to the end so you know if a file is an archive or encrypted.</h4>
+>To archive a directory, use `arch-crypt pack <input-directory> <output-file>`
+>  
+> Example: `arch-crypt pack my-directory my-directory-archive.tar`
+
+<h4>Note: In both cases, the file extension doesn't matter. However, it does help to add something to the end so you know if a file is encrypted or a tarball.</h4>
+
+## Probably useless notes for the curious people
+- During encryption, the input file is read in 32,768-byte sized blocks. To ensure data integrity and validity (_I.E. ensuring the data wasn't modified_), the Poly1305 hashing function will calculate a 16-byte 'checksum' and append it to the end of every block of data. This means that the encrypted output file will always be slightly larger than the input file.
+- During encryption, the salt that was used by the password-hashing algorithm (_Argon2id_), as well as the nonce used by the encryption algorithm (_ChaCha20_), will be added to the start of the encrypted file. This is needed during decryption so we can reproduce the same hash (_encryption key_) with the same password, as well as decrypt the data later.
+
+## Feature considerations (no promises)
+1. Compression (The compression algorithm is undecided. I am open to ideas!)
