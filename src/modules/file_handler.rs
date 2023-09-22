@@ -51,7 +51,7 @@ impl FileReaderWriter {
         let output_file = match output_file {
             Ok(output_file) => output_file,
             Err(error) => {
-                error!("Couldn't open the output file:\n {error}");
+                error!("Couldn't open the output file '{output_file_name}':\n {error}");
                 return Err(());
             }
         };
@@ -64,7 +64,8 @@ impl FileReaderWriter {
             }
         }; 
 
-        // let mut bufrdr = BufReader::new(file);
+        // This is currently unneeded, but consider implementing a BufReader in the future if performance becomes a big concern
+        // let mut bufrdr = std::io::BufReader::new(file);
 
         Ok(Self {
             input_file,
@@ -96,7 +97,6 @@ impl FileReaderWriter {
                 Err(())
             }
         }
-        // output_file.write(&file_buffer[..num_read]);
     }
 }
 

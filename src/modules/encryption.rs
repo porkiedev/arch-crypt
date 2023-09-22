@@ -16,7 +16,7 @@ along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.html.
 */
 
 
-use argon2::{Argon2, Error, password_hash::rand_core::RngCore};
+use argon2::{Argon2, password_hash::rand_core::RngCore};
 use chacha20::ChaCha20;
 use chacha20poly1305::{
     aead::{Aead, KeyInit, OsRng},
@@ -45,7 +45,7 @@ const BLOCK_SIZE: usize = 32768;
 /// 
 /// # Returns
 /// A tuple containing the hashed password and the salt used.
-fn hash_password(mut plaintext_password: String, input_salt: Option<[u8; 32]>) -> Result<([u8; 32], [u8; 32]), Error> {
+fn hash_password(mut plaintext_password: String, input_salt: Option<[u8; 32]>) -> Result<([u8; 32], [u8; 32]), ()> {
     // Variable declarations
     let mut password_hash = [0u8; 32];
     let mut salt = [0u8; 32];
@@ -57,15 +57,16 @@ fn hash_password(mut plaintext_password: String, input_salt: Option<[u8; 32]>) -
         },
         None => {
             OsRng.fill_bytes(&mut salt);
-        },
+        }
     }
 
     // Compute 256-bit hash from plaintext password
     match Argon2::default().hash_password_into(plaintext_password.as_bytes(), &salt, &mut password_hash) {
         Ok(_) => {},
         Err(error) => {
-            return Err(error);
-        },
+            error!("Couldn't hash the password: \n{error}");
+            return Err(());
+        }
     };
 
     // Zeroize the plaintext_password for security
@@ -104,14 +105,7 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Initialize cryptor
-    let cryptor = match Cryptor::new(encryption_key, None) {
-        Ok(resp) => {
-            resp
-        },
-        Err(_error) => {
-            return Err(());
-        },
-    };
+    let cryptor = Cryptor::new(encryption_key, None);
 
     // Zeroize the encryption_key for security
     encryption_key.zeroize();
@@ -215,14 +209,7 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Initialize the cryptor
-    let cryptor = match Cryptor::new(encryption_key, Some(nonce)) {
-        Ok(resp) => {
-            resp
-        },
-        Err(_error) => {
-            return Err(());
-        },
-    };
+    let cryptor = Cryptor::new(encryption_key, Some(nonce));
 
     // Zeroize the encryption_key for security
     encryption_key.zeroize();
@@ -278,7 +265,7 @@ impl Cryptor {
     /// 
     /// # Notes
     /// Specifying an input_nonce is useful when decrypting a file. You will need to use the same nonce that was used to encrypt the data
-    pub fn new(mut key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Result<Self, ()> {
+    pub fn new(mut key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Self {
         // Create ChaCha20Poly1305 cipher using our 256bit key
         let cipher = ChaCha20Poly1305::new(&key.into());
         
@@ -297,10 +284,10 @@ impl Cryptor {
         };
         
         // Return Cryptor instance
-        Ok(Self {
+        Self {
             cipher,
             nonce
-        })
+        }
     }
 
     /// Encrypts a given slice of bytes
