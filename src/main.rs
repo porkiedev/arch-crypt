@@ -22,6 +22,7 @@ use std::io::{BufRead, Write};
 use log::{info, error};
 mod modules;
 use modules::{encryption::{decrypt_file, encrypt_file}, archiver::{unpack, pack}, cli_args};
+use zeroize::Zeroize;
 
 
 fn main() {
@@ -139,7 +140,7 @@ fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()>
     };
 
     // Remove special characters from the password
-    let password = password.trim();
+    let password = password.trim().to_string();
 
     if should_confirm_password {
         // Initialize annother variable for the confirmation password
@@ -163,13 +164,16 @@ fn prompt_user_for_password(should_confirm_password: bool) -> Result<String, ()>
         };
 
         // Remove special characters from the confirmation password
-        let password_again = password_again.trim();
+        let mut password_again = password_again.trim().to_string();
 
         // Make sure the passwords match
         if password != password_again {
-            println!("ERROR: Passwords don't match");
+            error!("Passwords don't match");
             return Err(());
         };
+
+        // Flush the memory that holds our confirmation password with 0s for some extra security
+        password_again.zeroize();
     }
 
     // Return the password

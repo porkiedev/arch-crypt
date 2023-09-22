@@ -25,6 +25,7 @@ use chacha20poly1305::{
     consts::U12
 };
 use log::error;
+use zeroize::Zeroize;
 use crate::modules::file_handler::FileReaderWriter;
 
 
@@ -44,7 +45,7 @@ const BLOCK_SIZE: usize = 32768;
 /// 
 /// # Returns
 /// A tuple containing the hashed password and the salt used.
-fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Result<([u8; 32], [u8; 32]), Error> {
+fn hash_password(mut plaintext_password: String, input_salt: Option<[u8; 32]>) -> Result<([u8; 32], [u8; 32]), Error> {
     // Variable declarations
     let mut password_hash = [0u8; 32];
     let mut salt = [0u8; 32];
@@ -66,6 +67,9 @@ fn hash_password(plaintext_password: String, input_salt: Option<[u8; 32]>) -> Re
             return Err(error);
         },
     };
+
+    // Zeroize the plaintext_password for security
+    plaintext_password.zeroize();
 
     // Return the hash and the salt we used
     let encryption_key = (password_hash, salt);
@@ -90,10 +94,9 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Hash plaintext_password into a 256bit key
-    let (encryption_key, salt);
-    match hash_password(plaintext_password, None) {
+    let (mut encryption_key, salt) = match hash_password(plaintext_password, None) {
         Ok(resp) => {
-            (encryption_key, salt) = resp;
+            resp
         },
         Err(_error) => {
             return Err(());
@@ -110,7 +113,10 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
         },
     };
 
-    // Write salt and nonce to the start of the output file
+    // Zeroize the encryption_key for security
+    encryption_key.zeroize();
+
+    // Write the salt and nonce that we used to the start of the output file
     match file_rw.write(&salt) {
         Ok(_resp) => {},
         Err(_error) => {
@@ -158,6 +164,8 @@ pub fn encrypt_file(input_file: String, output_file: String, plaintext_password:
             }
         };
     }
+
+    // Return an ok result
     Ok(())
 }
 
@@ -197,9 +205,9 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
     };
 
     // Hash plaintext_password into a 256bit key
-    let encryption_key = match hash_password(plaintext_password, Some(salt)) {
+    let (mut encryption_key, _salt) = match hash_password(plaintext_password, Some(salt)) {
         Ok(resp) => {
-            resp.0 // resp.0 is the key, while resp.1 is the salt that was used
+            resp
         },
         Err(_error) => {
             return Err(());
@@ -215,6 +223,9 @@ pub fn decrypt_file(input_file: String, output_file: String, plaintext_password:
             return Err(());
         },
     };
+
+    // Zeroize the encryption_key for security
+    encryption_key.zeroize();
 
     // Define a few variables
     let total_file_size_bytes = file_rw.input_file_metadata.len() as usize;
@@ -267,17 +278,12 @@ impl Cryptor {
     /// 
     /// # Notes
     /// Specifying an input_nonce is useful when decrypting a file. You will need to use the same nonce that was used to encrypt the data
-    pub fn new(key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Result<Self, ()> {
+    pub fn new(mut key: [u8; 32], input_nonce: Option<[u8; 12]>) -> Result<Self, ()> {
         // Create ChaCha20Poly1305 cipher using our 256bit key
-        let cipher = match ChaCha20Poly1305::new_from_slice(&key) {
-            Ok(resp) => {
-                resp
-            },
-            Err(error) => {
-                error!("Failed to create an instance of the ChaCha20Poly1305 Cryptor:\n {error}");
-                return Err(());
-            },
-        };
+        let cipher = ChaCha20Poly1305::new(&key.into());
+        
+        // Zeroize the encryption key for security
+        key.zeroize();
 
         // Use provided nonce or generate a random one
         let mut nonce = [0u8; 12];
@@ -336,6 +342,7 @@ impl Cryptor {
         };
         Ok(decrypted_bytes)
     }
+
 }
 
 
