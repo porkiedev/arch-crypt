@@ -2,7 +2,7 @@
 
 If you're like me and have little to no trust in cloud storage providers, but you also want a safe way to back up your more critical data, this may suit your needs.
 
-Arch-crypt is a command-line tool. It has only been tested on Windows but there's no reason why it shouldn't work on other operating systems.
+Arch-crypt is a command-line tool. It has only been tested on Windows 10 and Ubuntu 22.04, but there's no reason why it shouldn't work on other operating systems.
 
 Arch-Crypt is capable of archiving directories, encrypting files, and vice-versa.
 1. The archiving system makes use of tar. Archived directories are converted to tarballs (.tar)
